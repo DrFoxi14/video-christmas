@@ -155,6 +155,13 @@ export const Diorama: React.FC<{timeline: ScoreTimeline}> = ({timeline}) => {
         startFrame={range.start}
         color={scene.transitionIn === 'page-flip' ? '#d8c8a8' : scene.palette.background}
       />
+      {activeIndex === storyboard.length - 1 ? (
+        <SceneTransition
+          kind={scene.transitionOut}
+          startFrame={Math.max(range.start, range.end - 18)}
+          color="#090807"
+        />
+      ) : null}
       <mesh position={[0, -4.56, 0.72]} receiveShadow>
         <boxGeometry args={[17, 0.08, 0.7]} />
         <meshStandardMaterial color="#263e4d" roughness={0.94} />
