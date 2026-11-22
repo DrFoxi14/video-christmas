@@ -99,7 +99,7 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
       position={[position[0] + slideX, position[1] + slideY - 4.5, position[2]]}
       rotation={[foldX + rotationJitter.x, rotationJitter.y, rotationJitter.z]}
     >
-      <group position={[0, 4.5, 0]}>
+      <group position={[0, 9, 0]}>
         <group position={[-8, 0, 0]} scale={[scale, -scale, scale]}>
           {geometries.map((geometry, index) => (
             <mesh
