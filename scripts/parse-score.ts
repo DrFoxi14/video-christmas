@@ -197,7 +197,9 @@ const parseMusicXml = (path: string): ParseResult => {
     for (const match of partTags) {
       const id = (match[1].match(/id=["']([^"']+)["']/i) || [])[1] || 'part';
       const body = match[2];
-      const name = (body.match(/<part-name\b[^>]*>([\s\S]*?)<\/part-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim() || id;
+      const explicitName = (body.match(/<part-name\b[^>]*>([\s\S]*?)<\/part-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim();
+      const instrumentName = (body.match(/<instrument-name\b[^>]*>([\s\S]*?)<\/instrument-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim();
+      const name = explicitName || instrumentName || id;
       const programValue = (body.match(/<midi-program\b[^>]*>([\s\S]*?)<\/midi-program>/i) || [])[1];
       partNames.set(id, {name, program: programValue ? Math.max(0, toNumber(programValue) - 1) : undefined});
     }
