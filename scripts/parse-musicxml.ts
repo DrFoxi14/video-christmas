@@ -195,7 +195,9 @@ const partNames = new Map<string, string>();
 const scoreParts = asArray<AnyRecord>(root['part-list']?.['score-part']);
 for (const part of scoreParts) {
   const id = String(part['@_id'] ?? '');
-  const name = textOf(part['part-name']) || id || 'Unnamed part';
+  const instrument = asArray<AnyRecord>(part['score-instrument'])[0];
+  const instrumentName = textOf(instrument?.['instrument-name']);
+  const name = textOf(part['part-name']) || instrumentName || id || 'Unnamed part';
   if (id) partNames.set(id, name);
 }
 const parts = asArray<AnyRecord>(root.part);
