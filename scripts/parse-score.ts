@@ -405,19 +405,50 @@ const parseMusicXml = (path: string): ParseResult => {
 };
 
 const buildDynamics = (notes: TimelineNote[], durationFrames: number, fps: number): DynamicSample[] => {
+  // Difference arrays keep this linear in score length + render duration, even for large scores.
+  const activeVelocityDelta = new Float64Array(durationFrames + 1);
+  const activeCountDelta = new Int32Array(durationFrames + 1);
+  const sortedStarts = [...notes].sort((a, b) => a.startSeconds - b.startSeconds);
+
+  for (const note of notes) {
+    const firstFrame = Math.max(0, Math.ceil(note.startSeconds * fps - 1e-9));
+    const lastFrame = Math.min(
+      durationFrames - 1,
+      Math.floor((note.startSeconds + note.durationSeconds) * fps + 1e-9),
+    );
+    if (firstFrame > lastFrame) continue;
+    activeVelocityDelta[firstFrame] += note.velocity;
+    activeVelocityDelta[lastFrame + 1] -= note.velocity;
+    activeCountDelta[firstFrame] += 1;
+    activeCountDelta[lastFrame + 1] -= 1;
+  }
+
   const samples: DynamicSample[] = [];
+  let activeVelocity = 0;
+  let activeCount = 0;
+  let recentStart = 0;
+  let recentEnd = 0;
+  let recentCount = 0;
+
   for (let frame = 0; frame < durationFrames; frame++) {
     const time = frame / fps;
-    const active = notes.filter((note) =>
-      note.startSeconds <= time && note.startSeconds + note.durationSeconds >= time,
-    );
-    const recent = notes.filter((note) =>
-      note.startSeconds <= time && note.startSeconds >= time - 0.6,
-    );
-    const meanVelocity = active.length
-      ? active.reduce((sum, note) => sum + note.velocity, 0) / active.length
-      : 0;
-    const density = Math.min(1, recent.length / 10);
+    activeVelocity += activeVelocityDelta[frame];
+    activeCount += activeCountDelta[frame];
+
+    while (recentEnd < sortedStarts.length && sortedStarts[recentEnd].startSeconds <= time) {
+      recentCount += 1;
+      recentEnd += 1;
+    }
+    while (
+      recentStart < recentEnd &&
+      sortedStarts[recentStart].startSeconds < time - 0.6
+    ) {
+      recentCount -= 1;
+      recentStart += 1;
+    }
+
+    const meanVelocity = activeCount > 0 ? activeVelocity / activeCount : 0;
+    const density = Math.min(1, recentCount / 10);
     const raw = Math.min(1, meanVelocity * 0.62 + density * 0.38);
     const previous = samples[samples.length - 1]?.value ?? raw;
     samples.push({
