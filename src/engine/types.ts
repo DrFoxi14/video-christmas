@@ -8,6 +8,8 @@ export type TrackFamily =
   | 'choir'
   | 'other';
 
+export type VoiceName = 'soprano' | 'alto' | 'tenor' | 'bass' | 'unknown';
+
 export interface TempoPoint {
   tick: number;
   quarter: number;
@@ -69,6 +71,52 @@ export interface AccentTrigger {
   pitch?: number;
 }
 
+export interface VoiceEntryEvent {
+  id: string;
+  voice: VoiceName;
+  trackId: string;
+  trackName: string;
+  measureNumber: number;
+  frame: number;
+  timeSeconds: number;
+  syllables: string[];
+  phraseStart: boolean;
+  confidence: number;
+}
+
+export interface DynamicEvent {
+  id: string;
+  kind: 'mark' | 'crescendo' | 'decrescendo' | 'subito' | 'hairpin-end';
+  frame: number;
+  timeSeconds: number;
+  value?: number;
+  label: string;
+  confidence: number;
+}
+
+export interface HarmonyEvent {
+  id: string;
+  kind: 'harmonic-shift' | 'cadence';
+  measureNumber: number;
+  frame: number;
+  timeSeconds: number;
+  pitchClasses: number[];
+  root?: number;
+  quality?: 'major' | 'minor' | 'other';
+  confidence: number;
+  label: string;
+}
+
+export interface SectionDensitySample {
+  frame: number;
+  strings: number;
+  brass: number;
+  woodwinds: number;
+  percussion: number;
+  bass: number;
+  choir: number;
+}
+
 export interface ScoreTimeline {
   version: 1;
   source: {kind: 'midi' | 'musicxml' | 'demo-seed'; file: string; title?: string};
@@ -82,4 +130,8 @@ export interface ScoreTimeline {
   notes: TimelineNote[];
   dynamics: DynamicSample[];
   accentTriggers: AccentTrigger[];
+  voiceEntries?: VoiceEntryEvent[];
+  dynamicEvents?: DynamicEvent[];
+  harmonyEvents?: HarmonyEvent[];
+  sectionDensity?: SectionDensitySample[];
 }
