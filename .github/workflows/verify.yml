@@ -1,0 +1,36 @@
+name: Verify deterministic paper-score engine
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Generate demo score and timeline
+        run: npm run score:demo
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Render 5-second 720p WebGL smoke test
+        run: npm run render:test
+      - name: Upload test render
+        if: always() && hashFiles('out/test-5s-720p.mp4') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-score-smoke-render
+          path: out/test-5s-720p.mp4
+          retention-days: 7
