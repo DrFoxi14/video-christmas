@@ -30,11 +30,14 @@ npm run score:parse -- --input assets/score/input.mid --out src/data/timeline.js
 npm run score:parse -- --input assets/score/input.musicxml --out src/data/timeline.json --fps 24
 ```
 
-4. Preview with the master track:
+4. For the live preview, replace the demo audio file with your master WAV:
 
 ```bash
-npx remotion studio src/index.ts --props='{"audioSrc":"audio/master.wav"}'
+cp /path/to/master.wav public/audio/demo-preview.wav
+npm run preview
 ```
+
+For a final render, keep your master as `public/audio/master.wav` and pass it explicitly:
 
 The parser supports MIDI and MusicXML/MXL. Finale `.musx` is a proprietary container and is not decoded by this project; export the attached Finale score to MusicXML or MIDI first, then run the parser. See `docs/FINALE-IMPORT.md`.
 
@@ -44,17 +47,17 @@ The parser supports MIDI and MusicXML/MXL. Finale `.musx` is a proprietary conta
 # 5-second 720p verification pass
 npm run render:test
 
-# Full 1080p H.264 MP4
-npm run render:1080p
+# Full 1080p H.264 MP4 synced to the master WAV
+npm run render:1080p -- --props='{"audioSrc":"audio/master.wav"}'
 
 # 4K H.264 MP4
-npm run render:4k
+npm run render:4k -- --props='{"audioSrc":"audio/master.wav"}'
 
 # 4K ProRes 422 HQ master
-npm run render:prores
+npm run render:prores -- --props='{"audioSrc":"audio/master.wav"}'
 ```
 
-For a master WAV, pass `--props='{"audioSrc":"audio/master.wav"}'` to any render command. `--gl=angle` enables the WebGL backend needed by Three.js in headless Chromium.
+`--gl=angle` enables the WebGL backend needed by Three.js in headless Chromium.
 
 ## Architecture
 
