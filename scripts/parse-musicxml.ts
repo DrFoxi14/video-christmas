@@ -616,4 +616,8 @@ console.table(harmonyEvents.map((event) => ({
   confidence: event.confidence.toFixed(2),
 })));
 console.log('\nTimeline written:', output);
-if (midiInput) console.log('Tempo reference:', midiInput);
+if (midiInput) {
+  console.log('Tempo reference:', midiInput);
+} else if (timeline.tempoMap.length === 1 && timeline.tempoMap[0].bpm === 120) {
+  console.warn('WARNING: No tempo marks were found in the MusicXML. The timeline uses an assumed 120 quarter-note BPM. Supply a matching MIDI export for precise timing.');
+}
