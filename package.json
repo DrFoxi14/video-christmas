@@ -12,7 +12,8 @@
     "render:test": "npm run score:demo && remotion render src/index.ts PaperScore out/test-5s-720p.mp4 --width=720 --height=405 --duration=120 --gl=swangle",
     "render:1080p": "remotion render src/index.ts PaperScore out/slava-1080p.mp4 --gl=angle",
     "render:4k": "remotion render src/index.ts PaperScore out/slava-4k.mp4 --width=3840 --height=2160 --gl=angle",
-    "render:prores": "remotion render src/index.ts PaperScore out/slava-4k-prores.mov --width=3840 --height=2160 --codec=prores --prores-profile=hq --pixel-format=yuv422p10le --gl=angle"
+    "render:prores": "remotion render src/index.ts PaperScore out/slava-4k-prores.mov --width=3840 --height=2160 --codec=prores --prores-profile=hq --pixel-format=yuv422p10le --gl=angle",
+    "parse:score": "tsx scripts/parse-musicxml.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
