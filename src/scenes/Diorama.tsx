@@ -27,8 +27,10 @@ const intensityAt = (timeline: ScoreTimeline, frame: number): number => {
 const accentPulse = (timeline: ScoreTimeline, frame: number): number => {
   let pulse = 0;
   for (const accent of timeline.accentTriggers) {
-    const distance = Math.abs(onTwosFrame(frame) - onTwosFrame(accent.frame));
-    if (distance < 10) pulse = Math.max(pulse, accent.intensity * (1 - distance / 10));
+    const distance = onTwosFrame(frame) - onTwosFrame(accent.frame);
+    if (distance >= 0 && distance < 10) {
+      pulse = Math.max(pulse, accent.intensity * (1 - distance / 10));
+    }
   }
   return pulse;
 };
@@ -38,10 +40,17 @@ export const Diorama: React.FC<{timeline: ScoreTimeline}> = ({timeline}) => {
   const {width, height} = useVideoConfig();
   const step = onTwosFrame(frame);
   const energy = intensityAt(timeline, frame);
+  const cameraEnergy = intensityAt(timeline, step);
   const pulse = accentPulse(timeline, frame);
-  const cameraZ = 16.6 - energy * 0.55 - pulse * 0.42;
-  const cameraX = Math.sin(step / 72) * 0.12;
-  const cameraY = Math.cos(step / 86) * 0.055;
+  const hardAccent = timeline.accentTriggers.some((accent) =>
+    onTwosFrame(accent.frame) === step &&
+    accent.intensity >= 0.72 &&
+    (accent.kind === 'percussion' || accent.kind === 'brass' || accent.kind === 'sub-hit'),
+  );
+  // The camera only steps on twos and every move is anchored to a score event or dynamic.
+  const cameraZ = 16.6 - cameraEnergy * 0.55 - pulse * 0.42 - (hardAccent ? 0.68 : 0);
+  const cameraX = (cameraEnergy - 0.25) * 0.14 + (hardAccent ? 0.12 : 0);
+  const cameraY = (cameraEnergy - 0.25) * 0.055;
 
   return (
     <ThreeCanvas
