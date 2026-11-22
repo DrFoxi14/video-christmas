@@ -47,6 +47,7 @@ export interface StoryScene {
   layers: StoryLayer[];
 }
 
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const cutout = (file: string) => 'assets/cutouts/' + file;
 const progress = (ratio: number, fallbackFrame: number): Cue => ({
   type: 'progress',
