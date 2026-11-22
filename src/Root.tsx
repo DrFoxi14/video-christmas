@@ -4,7 +4,7 @@ import timeline from './data/timeline.json';
 import {Video, type VideoProps} from './Video';
 
 export const RemotionRoot: React.FC = () => (
-  <Composition<VideoProps>
+  <Composition
     id="PaperScore"
     component={Video}
     durationInFrames={timeline.durationFrames}
