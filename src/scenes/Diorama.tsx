@@ -21,9 +21,43 @@ const intensityAt = (timeline: ScoreTimeline, frame: number): number => {
       break;
     }
   }
-  if (left.frame === right.frame) return left.value;
-  const mix = clamp01((frame - left.frame) / (right.frame - left.frame));
-  return left.value + (right.value - left.value) * mix;
+  const mix = left.frame === right.frame
+    ? 0
+    : clamp01((frame - left.frame) / (right.frame - left.frame));
+  let value = left.value + (right.value - left.value) * mix;
+
+  const events = [...(timeline.dynamicEvents ?? [])].sort((a, b) => a.frame - b.frame);
+  const marks = events.filter((event) =>
+    (event.kind === 'mark' || event.kind === 'subito') && event.value !== undefined,
+  );
+  const previousMark = [...marks].reverse().find((event) => event.frame <= frame);
+  const nextMark = marks.find((event) => event.frame > frame);
+  if (previousMark?.value !== undefined) {
+    if (nextMark?.value !== undefined && nextMark.frame > previousMark.frame) {
+      const markMix = clamp01((frame - previousMark.frame) / (nextMark.frame - previousMark.frame));
+      value = previousMark.value + (nextMark.value - previousMark.value) * markMix;
+    } else {
+      value = previousMark.value;
+    }
+  } else if (marks[0]?.value !== undefined) {
+    value = marks[0].value;
+  }
+
+  const ramps = events.filter((event) =>
+    (event.kind === 'crescendo' || event.kind === 'decrescendo') && event.frame <= frame,
+  );
+  const ramp = ramps[ramps.length - 1];
+  if (ramp) {
+    const end = events.find((event) =>
+      event.frame > ramp.frame &&
+      (event.kind === 'hairpin-end' || event.kind === 'mark' || event.kind === 'subito'),
+    )?.frame ?? timeline.durationFrames;
+    if (end > ramp.frame && frame <= end) {
+      const rampProgress = clamp01((frame - ramp.frame) / (end - ramp.frame));
+      value += ramp.kind === 'crescendo' ? 0.22 * rampProgress : -0.22 * rampProgress;
+    }
+  }
+  return clamp01(value);
 };
 
 const cameraPunch = (timeline: ScoreTimeline, frame: number): number => {
