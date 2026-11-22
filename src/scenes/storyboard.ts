@@ -1,104 +1,179 @@
-import type {ScoreTimeline} from '../engine/types';
+import type {HarmonyEvent, ScoreTimeline, VoiceName} from '../engine/types';
+
+export type TransitionKind = 'hard-cut' | 'page-flip' | 'curtain-close' | 'blackout';
 
 export type Cue =
   | {type: 'time'; seconds: number; fallbackFrame: number}
   | {type: 'measure'; number: number; fallbackFrame: number}
-  | {type: 'accent'; kind?: string; index: number; fallbackFrame: number};
+  | {type: 'progress'; ratio: number; fallbackFrame?: number}
+  | {type: 'accent'; kind?: string; index: number; fallbackFrame: number}
+  | {type: 'voice-entry'; voice: VoiceName | 'tutti'; index: number; fallbackFrame: number}
+  | {type: 'cadence'; index: number; fallbackFrame: number; minConfidence?: number}
+  | {type: 'harmonic-shift'; index: number; fallbackFrame: number; minConfidence?: number};
 
 export interface StoryLayer {
   id: string;
   color: string;
-  svg: string;
+  svgSrc?: string;
+  svg?: string;
   z: number;
-  cue: Cue;
+  enterCue: Cue;
+  exitCue?: Cue;
   transition: 'fold' | 'slide-left' | 'slide-right' | 'rise' | 'none';
   seed: number;
   jitter?: number;
 }
 
-export const storyboard: StoryLayer[] = [
+export interface ScenePalette {
+  background: string;
+  fog: string;
+  keyLight: string;
+  rimLight: string;
+  ambient: number;
+}
+
+export interface StoryScene {
+  id: string;
+  startCue: Cue;
+  endCue: Cue;
+  palette: ScenePalette;
+  cameraPath: {
+    from: [number, number, number];
+    to: [number, number, number];
+    fov: number;
+  };
+  transitionIn: TransitionKind;
+  transitionOut: TransitionKind;
+  layers: StoryLayer[];
+}
+
+const cutout = (file: string) => 'assets/cutouts/' + file;
+const progress = (ratio: number, fallbackFrame: number): Cue => ({
+  type: 'progress',
+  ratio,
+  fallbackFrame,
+});
+
+export const storyboard: StoryScene[] = [
   {
-    id: 'parchment-stage',
-    color: '#d8c8a8',
-    z: -2.8,
-    cue: {type: 'time', seconds: 0, fallbackFrame: 0},
-    transition: 'none',
-    seed: 18,
-    svg: '<svg viewBox="0 0 1600 900"><rect x="0" y="0" width="1600" height="900" rx="3" fill="#fff"/></svg>',
+    id: 'the-night-before',
+    startCue: progress(0, 0),
+    endCue: progress(0.24, 86),
+    palette: {
+      background: '#111d31',
+      fog: '#26374c',
+      keyLight: '#f4d7a1',
+      rimLight: '#91b8dc',
+      ambient: 0.09,
+    },
+    cameraPath: {from: [-0.45, 0.12, 17.2], to: [0.15, 0.02, 16.4], fov: 35},
+    transitionIn: 'hard-cut',
+    transitionOut: 'page-flip',
+    layers: [
+      {id: 'night-clouds', color: '#c7c5bd', svgSrc: cutout('cloud-banks.svg'), z: -1.25, enterCue: progress(0, 0), transition: 'slide-left', seed: 42, jitter: 0.0015},
+      {id: 'distant-hills', color: '#62798b', svgSrc: cutout('layered-hills.svg'), z: -0.72, enterCue: progress(0.025, 8), transition: 'slide-right', seed: 101},
+      {id: 'far-village', color: '#34495c', svgSrc: cutout('bethlehem-village.svg'), z: -0.12, enterCue: progress(0.09, 32), transition: 'rise', seed: 126},
+      {id: 'foreground-paper', color: '#1e3348', svgSrc: cutout('foreground-ridge.svg'), z: 0.9, enterCue: progress(0.16, 58), transition: 'fold', seed: 189, jitter: 0.002},
+    ],
   },
   {
-    id: 'distant-clouds',
-    color: '#e7dfc9',
-    z: -1.3,
-    cue: {type: 'measure', number: 1, fallbackFrame: 0},
-    transition: 'slide-left',
-    seed: 42,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M70 255 C75 208 126 184 170 205 C193 151 272 151 299 209 C344 198 384 231 381 271 L70 271 Z"/><path d="M1110 190 C1120 143 1176 131 1210 158 C1240 100 1320 112 1336 165 C1390 154 1445 187 1443 225 L1110 225 Z"/></svg>',
+    id: 'the-journey',
+    startCue: progress(0.24, 86),
+    endCue: progress(0.5, 180),
+    palette: {
+      background: '#201b2a',
+      fog: '#40364a',
+      keyLight: '#e7bd83',
+      rimLight: '#a3b8d0',
+      ambient: 0.1,
+    },
+    cameraPath: {from: [0.55, -0.1, 16.9], to: [-0.35, 0.18, 15.9], fov: 34},
+    transitionIn: 'page-flip',
+    transitionOut: 'curtain-close',
+    layers: [
+      {id: 'journey-clouds', color: '#b7a99b', svgSrc: cutout('cloud-banks.svg'), z: -1.35, enterCue: progress(0.24, 86), transition: 'slide-left', seed: 242},
+      {id: 'journey-hills', color: '#726477', svgSrc: cutout('layered-hills.svg'), z: -0.58, enterCue: progress(0.26, 94), transition: 'slide-right', seed: 278},
+      {id: 'distant-arches', color: '#80614e', svgSrc: cutout('gothic-arches.svg'), z: 0.1, enterCue: {type: 'harmonic-shift', index: 0, fallbackFrame: 112, minConfidence: 0.35}, transition: 'fold', seed: 302},
+      {id: 'journey-foreground', color: '#352e3c', svgSrc: cutout('foreground-ridge.svg'), z: 0.96, enterCue: progress(0.34, 122), transition: 'rise', seed: 328},
+    ],
   },
   {
-    id: 'golden-rays',
-    color: '#e8bd70',
-    z: -0.95,
-    cue: {type: 'measure', number: 2, fallbackFrame: 80},
-    transition: 'rise',
-    seed: 76,
-    jitter: 0.003,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M690 0 L745 0 L820 610 L786 610 Z"/><path d="M780 0 L815 0 L875 600 L845 600 Z"/><path d="M900 0 L948 0 L875 600 L846 600 Z"/><path d="M1010 0 L1065 0 L915 610 L878 610 Z"/></svg>',
+    id: 'the-manger',
+    startCue: progress(0.5, 180),
+    endCue: progress(0.78, 281),
+    palette: {
+      background: '#182335',
+      fog: '#394b5d',
+      keyLight: '#ffe1a4',
+      rimLight: '#b6c9df',
+      ambient: 0.11,
+    },
+    cameraPath: {from: [-0.1, 0.08, 16.2], to: [0.0, 0.3, 15.3], fov: 33},
+    transitionIn: 'curtain-close',
+    transitionOut: 'page-flip',
+    layers: [
+      {id: 'manger-arches', color: '#a77f60', svgSrc: cutout('gothic-arches.svg'), z: -0.55, enterCue: progress(0.5, 180), transition: 'fold', seed: 411, jitter: 0.0015},
+      {id: 'manger-silhouette', color: '#4d5662', svgSrc: cutout('manger-silhouette.svg'), z: 0.0, enterCue: {type: 'voice-entry', voice: 'soprano', index: 0, fallbackFrame: 194}, transition: 'rise', seed: 428},
+      {id: 'golden-radiance', color: '#e5bd73', svgSrc: cutout('fine-rays.svg'), z: 0.48, enterCue: {type: 'cadence', index: 0, fallbackFrame: 224, minConfidence: 0.45}, transition: 'fold', seed: 466, jitter: 0.001},
+      {id: 'nativity-star', color: '#f3d69c', svgSrc: cutout('starburst.svg'), z: 0.82, enterCue: {type: 'voice-entry', voice: 'tutti', index: 0, fallbackFrame: 244}, transition: 'fold', seed: 482},
+    ],
   },
   {
-    id: 'mountain-back',
-    color: '#75899a',
-    z: -0.48,
-    cue: {type: 'time', seconds: 0.4, fallbackFrame: 10},
-    transition: 'slide-right',
-    seed: 101,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M0 590 L155 428 L256 520 L405 300 L520 456 L665 365 L812 520 L935 405 L1090 545 L1268 350 L1410 495 L1538 414 L1600 470 L1600 900 L0 900 Z"/></svg>',
-  },
-  {
-    id: 'cathedral-arches',
-    color: '#b78c68',
-    z: 0.05,
-    cue: {type: 'measure', number: 3, fallbackFrame: 160},
-    transition: 'fold',
-    seed: 143,
-    jitter: 0.002,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M115 900 L115 420 C115 230 265 85 450 85 C635 85 785 230 785 420 L785 900 L690 900 L690 423 C690 282 580 175 450 175 C320 175 210 282 210 423 L210 900 Z"/><path d="M870 900 L870 475 C870 300 1000 170 1160 170 C1320 170 1450 300 1450 475 L1450 900 L1360 900 L1360 478 C1360 350 1270 260 1160 260 C1050 260 960 350 960 478 L960 900 Z"/></svg>',
-  },
-  {
-    id: 'front-ridge',
-    color: '#344f5d',
-    z: 0.52,
-    cue: {type: 'accent', kind: 'percussion', index: 0, fallbackFrame: 146},
-    transition: 'slide-left',
-    seed: 189,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M0 755 L185 650 L335 710 L505 580 L685 695 L860 600 L1035 720 L1200 615 L1380 690 L1510 630 L1600 685 L1600 900 L0 900 Z"/></svg>',
-  },
-  {
-    id: 'floating-star',
-    color: '#e4bf7c',
-    z: 0.88,
-    cue: {type: 'accent', kind: 'brass', index: 0, fallbackFrame: 216},
-    transition: 'fold',
-    seed: 221,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M800 220 L842 330 L960 336 L870 412 L900 530 L800 468 L700 530 L730 412 L640 336 L758 330 Z"/></svg>',
-  },
-  {
-    id: 'foreground-cutout',
-    color: '#1f3548',
-    z: 1.12,
-    cue: {type: 'accent', kind: 'percussion', index: -1, fallbackFrame: 266},
-    transition: 'rise',
-    seed: 252,
-    svg: '<svg viewBox="0 0 1600 900"><path d="M0 830 C150 755 260 790 390 740 C535 690 650 770 795 735 C960 695 1090 800 1235 750 C1390 700 1510 760 1600 720 L1600 900 L0 900 Z"/></svg>',
+    id: 'glory',
+    startCue: progress(0.78, 281),
+    endCue: progress(1, 360),
+    palette: {
+      background: '#2b211b',
+      fog: '#574334',
+      keyLight: '#fff0c9',
+      rimLight: '#e0bd89',
+      ambient: 0.12,
+    },
+    cameraPath: {from: [0.0, 0.18, 16.0], to: [0, 0.0, 14.8], fov: 32},
+    transitionIn: 'page-flip',
+    transitionOut: 'blackout',
+    layers: [
+      {id: 'glory-arches', color: '#b68c64', svgSrc: cutout('gothic-arches.svg'), z: -0.62, enterCue: progress(0.78, 281), transition: 'fold', seed: 511},
+      {id: 'glory-clouds', color: '#d8c19d', svgSrc: cutout('cloud-banks.svg'), z: -0.18, enterCue: progress(0.8, 288), transition: 'slide-left', seed: 532},
+      {id: 'glory-rays', color: '#f0cb83', svgSrc: cutout('fine-rays.svg'), z: 0.38, enterCue: {type: 'cadence', index: -1, fallbackFrame: 320, minConfidence: 0.4}, transition: 'rise', seed: 548},
+      {id: 'glory-star', color: '#f7dda9', svgSrc: cutout('starburst.svg'), z: 0.78, enterCue: progress(0.88, 317), transition: 'fold', seed: 561},
+      {id: 'glory-foreground', color: '#352a24', svgSrc: cutout('foreground-ridge.svg'), z: 1.02, enterCue: progress(0.92, 331), transition: 'rise', seed: 579},
+    ],
   },
 ];
 
+const selectIndex = <T,>(items: T[], index: number): T | undefined => {
+  if (!items.length) return undefined;
+  return index < 0 ? items[items.length + index] : items[index];
+};
+
 export const resolveCueFrame = (timeline: ScoreTimeline, cue: Cue): number => {
   if (cue.type === 'time') return Math.round(cue.seconds * timeline.fps);
+  if (cue.type === 'progress') {
+    return cue.fallbackFrame ?? Math.round(Math.max(0, Math.min(1, cue.ratio)) * timeline.durationFrames);
+  }
   if (cue.type === 'measure') {
     return timeline.measures.find((measure) => measure.number === cue.number)?.frame ?? cue.fallbackFrame;
   }
-  const matching = timeline.accentTriggers.filter((accent) => !cue.kind || accent.kind === cue.kind);
-  const selected = cue.index < 0 ? matching[matching.length + cue.index] : matching[cue.index];
-  return selected?.frame ?? cue.fallbackFrame;
+  if (cue.type === 'accent') {
+    const matching = timeline.accentTriggers.filter((accent) => !cue.kind || accent.kind === cue.kind);
+    return selectIndex(matching, cue.index)?.frame ?? cue.fallbackFrame;
+  }
+  if (cue.type === 'voice-entry') {
+    const matching = (timeline.voiceEntries ?? []).filter((event) =>
+      cue.voice === 'tutti' || event.voice === cue.voice,
+    );
+    return selectIndex(matching, cue.index)?.frame ?? cue.fallbackFrame;
+  }
+  const candidates: HarmonyEvent[] = (timeline.harmonyEvents ?? [])
+    .filter((event) => event.kind === cue.type && event.confidence >= (cue.minConfidence ?? 0));
+  return selectIndex(candidates, cue.index)?.frame ?? cue.fallbackFrame;
 };
+
+export const sceneFrameRange = (timeline: ScoreTimeline, scene: StoryScene) => ({
+  start: Math.max(0, resolveCueFrame(timeline, scene.startCue)),
+  end: Math.min(timeline.durationFrames, Math.max(
+    resolveCueFrame(timeline, scene.startCue) + 1,
+    resolveCueFrame(timeline, scene.endCue),
+  )),
+});
