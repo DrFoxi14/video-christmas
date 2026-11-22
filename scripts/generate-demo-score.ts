@@ -117,7 +117,6 @@ for (const family of ['strings', 'brass', 'percussion', 'bass'] as const) {
   if (family === 'bass') track.instrument.number = 43;
   if (family === 'percussion') {
     track.channel = 9;
-    track.instrument.percussion = true;
   }
   for (const note of demoNotes.filter((item) => item.family === family)) {
     track.addNote({
