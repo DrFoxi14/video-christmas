@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo} from 'react';
+import React, {useLayoutEffect, useEffect, useMemo} from 'react';
 import {ExtrudeGeometry, MeshStandardMaterial} from 'three';
 import {SVGLoader} from 'three/examples/jsm/loaders/SVGLoader.js';
 import {useCurrentFrame} from 'remotion';
@@ -73,7 +73,7 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
     return output;
   }, [svg, thickness]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     maps.albedo.offset.set(boil.u, boil.v);
     maps.bump.offset.set(boil.u * 1.4, boil.v * 1.3);
     maps.roughness.offset.set(boil.u, boil.v);
