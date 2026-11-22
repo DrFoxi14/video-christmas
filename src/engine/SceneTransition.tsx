@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useLayoutEffect, useMemo} from 'react';
 import {DoubleSide, MeshBasicMaterial} from 'three';
 import {useCurrentFrame} from 'remotion';
 import type {TransitionKind} from '../scenes/storyboard';
@@ -13,31 +13,41 @@ export const SceneTransition: React.FC<{
   duration?: number;
 }> = ({kind, startFrame, color, duration = 18}) => {
   const frame = onTwosFrame(useCurrentFrame());
-  if (kind === 'hard-cut' || frame < startFrame || frame > startFrame + duration) return null;
   const progress = clamp01((frame - startFrame) / duration);
-  const material = (opacity = 1) => new MeshBasicMaterial({
+  const opacity = kind === 'blackout'
+    ? Math.max(0, 1 - Math.abs(progress - 0.5) * 2)
+    : 1;
+  const material = useMemo(() => new MeshBasicMaterial({
     color,
-    transparent: opacity < 1,
-    opacity,
+    transparent: kind === 'blackout',
+    opacity: 1,
     side: DoubleSide,
     depthWrite: false,
-  });
+  }), [color, kind]);
+
+  useLayoutEffect(() => {
+    material.opacity = opacity;
+    material.needsUpdate = true;
+  }, [material, opacity]);
+
+  useEffect(() => () => material.dispose(), [material]);
+
+  if (kind === 'hard-cut' || frame < startFrame || frame > startFrame + duration) return null;
 
   if (kind === 'page-flip') {
     return (
       <mesh position={[0, 0, 5.7]} rotation={[0, Math.PI * progress, 0]}>
         <planeGeometry args={[24, 15]} />
-        <primitive object={material(1)} attach="material" />
+        <primitive object={material} attach="material" />
       </mesh>
     );
   }
 
   if (kind === 'blackout') {
-    const opacity = Math.max(0, 1 - Math.abs(progress - 0.5) * 2);
     return (
       <mesh position={[0, 0, 5.7]}>
         <planeGeometry args={[24, 15]} />
-        <primitive object={material(opacity)} attach="material" />
+        <primitive object={material} attach="material" />
       </mesh>
     );
   }
@@ -49,11 +59,11 @@ export const SceneTransition: React.FC<{
     <group position={[0, 0, 5.7]}>
       <mesh position={[-spread, 0, 0]}>
         <planeGeometry args={[12, 15]} />
-        <primitive object={material(1)} attach="material" />
+        <primitive object={material} attach="material" />
       </mesh>
       <mesh position={[spread, 0, 0]}>
         <planeGeometry args={[12, 15]} />
-        <primitive object={material(1)} attach="material" />
+        <primitive object={material} attach="material" />
       </mesh>
     </group>
   );
