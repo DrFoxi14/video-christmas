@@ -3,6 +3,8 @@ name: Verify deterministic paper-score video engine
 on:
   push:
     branches: [main, upgrade/multi-scene-video-only]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,10 +27,24 @@ jobs:
         run: npm run parse:score -- scripts/fixtures/satb-smoke.musicxml --out out/satb-smoke-timeline.json --fps 24
       - name: Generate demo score and fallback timeline
         run: npm run score:demo
+      - name: Assert SATB, lyrics, dynamics, and harmony were detected
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const t = JSON.parse(fs.readFileSync('out/satb-smoke-timeline.json', 'utf8')); const checks = [['voice entries', t.voiceEntries?.length >= 4], ['lyrics', t.voiceEntries?.some(v => v.syllables?.includes('Slavă'))], ['dynamics', t.dynamicEvents?.length >= 1], ['harmonic shift', t.harmonyEvents?.some(e => e.kind === 'harmonic-shift')], ['probable cadence', t.harmonyEvents?.some(e => e.kind === 'cadence')]]; for (const [name, ok] of checks) console.log((ok ? 'PASS ' : 'FAIL ') + name); if (checks.some(([, ok]) => !ok)) process.exit(1);"
       - name: TypeScript typecheck
         run: npm run typecheck
       - name: Render 5-second 720p WebGL smoke test
         run: npm run render:test
+      - name: Verify final MP4 contains no audio stream
+        run: |
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          if ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of csv=p=0 out/test-5s-720p.mp4 | grep -q audio; then
+            echo "Unexpected audio stream found in video-only output"
+            exit 1
+          fi
+          echo "Verified: output contains no audio stream"
       - name: Upload test render
         if: always() && hashFiles('out/test-5s-720p.mp4') != ''
         uses: actions/upload-artifact@v4
