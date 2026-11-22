@@ -7,9 +7,9 @@ export type Cue =
   | {type: 'measure'; number: number; fallbackFrame: number}
   | {type: 'progress'; ratio: number; fallbackFrame?: number}
   | {type: 'accent'; kind?: string; index: number; fallbackFrame: number}
-  | {type: 'voice-entry'; voice: VoiceName | 'tutti'; index: number; fallbackFrame: number}
-  | {type: 'cadence'; index: number; fallbackFrame: number; minConfidence?: number}
-  | {type: 'harmonic-shift'; index: number; fallbackFrame: number; minConfidence?: number};
+  | {type: 'voice-entry'; voice: VoiceName | 'tutti'; index: number; fallbackFrame: number; afterProgress?: number}
+  | {type: 'cadence'; index: number; fallbackFrame: number; minConfidence?: number; afterProgress?: number}
+  | {type: 'harmonic-shift'; index: number; fallbackFrame: number; minConfidence?: number; afterProgress?: number};
 
 export interface StoryLayer {
   id: string;
@@ -93,7 +93,7 @@ export const storyboard: StoryScene[] = [
     layers: [
       {id: 'journey-clouds', color: '#b7a99b', svgSrc: cutout('cloud-banks.svg'), z: -1.35, enterCue: progress(0.24, 86), transition: 'slide-left', seed: 242},
       {id: 'journey-hills', color: '#726477', svgSrc: cutout('layered-hills.svg'), z: -0.58, enterCue: progress(0.26, 94), transition: 'slide-right', seed: 278},
-      {id: 'distant-arches', color: '#80614e', svgSrc: cutout('gothic-arches.svg'), z: 0.1, enterCue: {type: 'harmonic-shift', index: 0, fallbackFrame: 112, minConfidence: 0.35}, transition: 'fold', seed: 302},
+      {id: 'distant-arches', color: '#80614e', svgSrc: cutout('gothic-arches.svg'), z: 0.1, enterCue: {type: 'harmonic-shift', index: 0, fallbackFrame: 112, minConfidence: 0.35, afterProgress: 0.24}, transition: 'fold', seed: 302},
       {id: 'journey-foreground', color: '#352e3c', svgSrc: cutout('foreground-ridge.svg'), z: 0.96, enterCue: progress(0.34, 122), transition: 'rise', seed: 328},
     ],
   },
@@ -113,9 +113,9 @@ export const storyboard: StoryScene[] = [
     transitionOut: 'page-flip',
     layers: [
       {id: 'manger-arches', color: '#a77f60', svgSrc: cutout('gothic-arches.svg'), z: -0.55, enterCue: progress(0.5, 180), transition: 'fold', seed: 411, jitter: 0.0015},
-      {id: 'manger-silhouette', color: '#4d5662', svgSrc: cutout('manger-silhouette.svg'), z: 0.0, enterCue: {type: 'voice-entry', voice: 'soprano', index: 0, fallbackFrame: 194}, transition: 'rise', seed: 428},
-      {id: 'golden-radiance', color: '#e5bd73', svgSrc: cutout('fine-rays.svg'), z: 0.48, enterCue: {type: 'cadence', index: 0, fallbackFrame: 224, minConfidence: 0.45}, transition: 'fold', seed: 466, jitter: 0.001},
-      {id: 'nativity-star', color: '#f3d69c', svgSrc: cutout('starburst.svg'), z: 0.82, enterCue: {type: 'voice-entry', voice: 'tutti', index: 0, fallbackFrame: 244}, transition: 'fold', seed: 482},
+      {id: 'manger-silhouette', color: '#4d5662', svgSrc: cutout('manger-silhouette.svg'), z: 0.0, enterCue: {type: 'voice-entry', voice: 'soprano', index: 0, fallbackFrame: 194, afterProgress: 0.5}, transition: 'rise', seed: 428},
+      {id: 'golden-radiance', color: '#e5bd73', svgSrc: cutout('fine-rays.svg'), z: 0.48, enterCue: {type: 'cadence', index: 0, fallbackFrame: 224, minConfidence: 0.45, afterProgress: 0.5}, transition: 'fold', seed: 466, jitter: 0.001},
+      {id: 'nativity-star', color: '#f3d69c', svgSrc: cutout('starburst.svg'), z: 0.82, enterCue: {type: 'voice-entry', voice: 'tutti', index: 0, fallbackFrame: 244, afterProgress: 0.5}, transition: 'fold', seed: 482},
     ],
   },
   {
@@ -135,7 +135,7 @@ export const storyboard: StoryScene[] = [
     layers: [
       {id: 'glory-arches', color: '#b68c64', svgSrc: cutout('gothic-arches.svg'), z: -0.62, enterCue: progress(0.78, 281), transition: 'fold', seed: 511},
       {id: 'glory-clouds', color: '#d8c19d', svgSrc: cutout('cloud-banks.svg'), z: -0.18, enterCue: progress(0.8, 288), transition: 'slide-left', seed: 532},
-      {id: 'glory-rays', color: '#f0cb83', svgSrc: cutout('fine-rays.svg'), z: 0.38, enterCue: {type: 'cadence', index: -1, fallbackFrame: 320, minConfidence: 0.4}, transition: 'rise', seed: 548},
+      {id: 'glory-rays', color: '#f0cb83', svgSrc: cutout('fine-rays.svg'), z: 0.38, enterCue: {type: 'cadence', index: -1, fallbackFrame: 320, minConfidence: 0.4, afterProgress: 0.78}, transition: 'rise', seed: 548},
       {id: 'glory-star', color: '#f7dda9', svgSrc: cutout('starburst.svg'), z: 0.78, enterCue: progress(0.88, 317), transition: 'fold', seed: 561},
       {id: 'glory-foreground', color: '#352a24', svgSrc: cutout('foreground-ridge.svg'), z: 1.02, enterCue: progress(0.92, 331), transition: 'rise', seed: 579},
     ],
@@ -159,8 +159,11 @@ export const resolveCueFrame = (timeline: ScoreTimeline, cue: Cue): number => {
     const matching = timeline.accentTriggers.filter((accent) => !cue.kind || accent.kind === cue.kind);
     return selectIndex(matching, cue.index)?.frame ?? cue.fallbackFrame;
   }
+  const afterFrame = 'afterProgress' in cue && cue.afterProgress !== undefined
+    ? Math.round(clamp01(cue.afterProgress) * timeline.durationFrames)
+    : 0;
   if (cue.type === 'voice-entry') {
-    const entries = timeline.voiceEntries ?? [];
+    const entries = (timeline.voiceEntries ?? []).filter((event) => event.frame >= afterFrame);
     if (cue.voice !== 'tutti') {
       return selectIndex(entries.filter((event) => event.voice === cue.voice), cue.index)?.frame ?? cue.fallbackFrame;
     }
@@ -177,7 +180,7 @@ export const resolveCueFrame = (timeline: ScoreTimeline, cue: Cue): number => {
     return selectIndex(tuttiFrames, cue.index) ?? cue.fallbackFrame;
   }
   const candidates: HarmonyEvent[] = (timeline.harmonyEvents ?? [])
-    .filter((event) => event.kind === cue.type && event.confidence >= (cue.minConfidence ?? 0));
+    .filter((event) => event.kind === cue.type && event.frame >= afterFrame && event.confidence >= (cue.minConfidence ?? 0));
   return selectIndex(candidates, cue.index)?.frame ?? cue.fallbackFrame;
 };
 
