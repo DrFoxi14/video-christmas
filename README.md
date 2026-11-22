@@ -46,7 +46,7 @@ Finale .musx is not decoded by this project. Export MusicXML or MIDI first; see 
 ## Render video-only output
 
 ~~~bash
-# 5-second 720p verification pass
+# 15-second 720p full-demo verification pass
 npm run render:test
 
 # Full 1080p H.264 MP4
