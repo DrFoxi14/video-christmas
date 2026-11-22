@@ -1,6 +1,9 @@
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
-import {Midi} from '@tonejs/midi';
+import {createRequire} from 'node:module';
+
+const require = createRequire(import.meta.url);
+const {Midi} = require('@tonejs/midi') as typeof import('@tonejs/midi');
 
 type DemoNote = {
   family: 'strings' | 'brass' | 'percussion' | 'bass';
