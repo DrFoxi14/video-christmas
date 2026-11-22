@@ -1,6 +1,9 @@
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {dirname, extname, resolve} from 'node:path';
-import {Midi} from '@tonejs/midi';
+import {createRequire} from 'node:module';
+
+const require = createRequire(import.meta.url);
+const {Midi} = require('@tonejs/midi') as typeof import('@tonejs/midi');
 import {XMLParser} from 'fast-xml-parser';
 import {unzipSync} from 'fflate';
 import type {
