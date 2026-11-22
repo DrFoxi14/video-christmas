@@ -105,9 +105,12 @@ const writeWav = (path: string, notes: DemoNote[], durationSeconds: number) => {
 };
 
 const midi = new Midi();
-midi.header.setTempo(72, 0);
-midi.header.setTempo(96, midi.header.ppq * 8);
-midi.header.setTempo(120, midi.header.ppq * 16);
+midi.header.tempos = [
+  {bpm: 72, ticks: 0},
+  {bpm: 96, ticks: midi.header.ppq * 8},
+  {bpm: 120, ticks: midi.header.ppq * 16},
+];
+midi.header.update();
 
 for (const family of ['strings', 'brass', 'percussion', 'bass'] as const) {
   const track = midi.addTrack();
