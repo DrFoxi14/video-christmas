@@ -150,7 +150,7 @@ const selectIndex = <T,>(items: T[], index: number): T | undefined => {
 export const resolveCueFrame = (timeline: ScoreTimeline, cue: Cue): number => {
   if (cue.type === 'time') return Math.round(cue.seconds * timeline.fps);
   if (cue.type === 'progress') {
-    return cue.fallbackFrame ?? Math.round(Math.max(0, Math.min(1, cue.ratio)) * timeline.durationFrames);
+    return Math.round(Math.max(0, Math.min(1, cue.ratio)) * timeline.durationFrames);
   }
   if (cue.type === 'measure') {
     return timeline.measures.find((measure) => measure.number === cue.number)?.frame ?? cue.fallbackFrame;
@@ -160,10 +160,21 @@ export const resolveCueFrame = (timeline: ScoreTimeline, cue: Cue): number => {
     return selectIndex(matching, cue.index)?.frame ?? cue.fallbackFrame;
   }
   if (cue.type === 'voice-entry') {
-    const matching = (timeline.voiceEntries ?? []).filter((event) =>
-      cue.voice === 'tutti' || event.voice === cue.voice,
-    );
-    return selectIndex(matching, cue.index)?.frame ?? cue.fallbackFrame;
+    const entries = timeline.voiceEntries ?? [];
+    if (cue.voice !== 'tutti') {
+      return selectIndex(entries.filter((event) => event.voice === cue.voice), cue.index)?.frame ?? cue.fallbackFrame;
+    }
+    const groups = new Map<number, Set<VoiceName>>();
+    for (const event of entries) {
+      const voices = groups.get(event.frame) ?? new Set<VoiceName>();
+      voices.add(event.voice);
+      groups.set(event.frame, voices);
+    }
+    const tuttiFrames = [...groups.entries()]
+      .filter(([, voices]) => voices.size >= 2)
+      .map(([eventFrame]) => eventFrame)
+      .sort((a, b) => a - b);
+    return selectIndex(tuttiFrames, cue.index) ?? cue.fallbackFrame;
   }
   const candidates: HarmonyEvent[] = (timeline.harmonyEvents ?? [])
     .filter((event) => event.kind === cue.type && event.confidence >= (cue.minConfidence ?? 0));
