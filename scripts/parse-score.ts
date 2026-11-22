@@ -70,7 +70,7 @@ const classify = (name: string, program?: number, percussion = false): TrackFami
   if (/violin|viola|cello|string|orchestra|bowed/i.test(name) || (program !== undefined && program >= 40 && program <= 51)) return 'strings';
   if (/trumpet|horn|trombone|tuba|brass|cornet/i.test(name) || (program !== undefined && program >= 56 && program <= 63)) return 'brass';
   if (/flute|oboe|clarinet|bassoon|piccolo|sax|woodwind/i.test(name) || (program !== undefined && program >= 64 && program <= 79)) return 'woodwinds';
-  if (/choir|voice|vocal|chorus/i.test(name) || (program !== undefined && program >= 52 && program <= 55)) return 'choir';
+  if (/choir|voice|vocal|chorus|soprano|alto|tenor/i.test(name) || (program !== undefined && program >= 52 && program <= 55)) return 'choir';
   if (/piano|organ|keyboard|harpsichord|celesta/i.test(name) || (program !== undefined && program <= 7)) return 'keyboard';
   if (/bass|low/i.test(name)) return 'bass';
   return 'other';
