@@ -232,6 +232,8 @@ parts.forEach((part, partIndex) => {
   const previousWasRest = new Map<string, boolean>();
 
   measures.forEach((measure, measureIndex) => {
+    cursorByVoice.clear();
+    lastOnsetByVoice.clear();
     const measureMarker = timeline.measures[measureIndex];
     if (!measureMarker) return;
     const attributes = measure.attributes as AnyRecord | undefined;
