@@ -1,0 +1,8 @@
+node_modules/
+out/
+.cache/
+.DS_Store
+public/audio/*.wav
+public/score/*.mid
+assets/score/*
+!assets/score/.gitkeep

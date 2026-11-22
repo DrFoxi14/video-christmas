@@ -1,0 +1,38 @@
+{
+  "name": "video-christmas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "preview": "remotion studio src/index.ts",
+    "dev": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "score:demo": "tsx scripts/generate-demo-score.ts && tsx scripts/parse-score.ts --input public/score/demo.mid --out src/data/timeline.json --fps 24 --duration 15",
+    "score:parse": "tsx scripts/parse-score.ts",
+    "render:test": "npm run score:demo && remotion render src/index.ts PaperScore out/test-5s-720p.mp4 --width=720 --height=405 --duration=120 --gl=angle",
+    "render:1080p": "remotion render src/index.ts PaperScore out/slava-1080p.mp4 --gl=angle",
+    "render:4k": "remotion render src/index.ts PaperScore out/slava-4k.mp4 --width=3840 --height=2160 --gl=angle",
+    "render:prores": "remotion render src/index.ts PaperScore out/slava-4k-prores.mov --width=3840 --height=2160 --codec=prores --prores-profile=3 --pixel-format=yuv422p10le --gl=angle"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
+    "@remotion/three": "^5.0.0",
+    "@tonejs/midi": "^2.0.28",
+    "fast-xml-parser": "^5.2.5",
+    "fflate": "^0.8.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "remotion": "^5.0.0",
+    "three": "^0.181.2"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^5.0.0",
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.7",
+    "@types/three": "^0.181.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
