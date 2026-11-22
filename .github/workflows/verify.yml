@@ -1,8 +1,8 @@
-name: Verify deterministic paper-score engine
+name: Verify deterministic paper-score video engine
 
 on:
   push:
-    branches: [main]
+    branches: [main, upgrade/multi-scene-video-only]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -21,7 +21,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Generate demo score and timeline
+      - name: Parse SATB MusicXML fixture
+        run: npm run parse:score -- scripts/fixtures/satb-smoke.musicxml --out out/satb-smoke-timeline.json --fps 24
+      - name: Generate demo score and fallback timeline
         run: npm run score:demo
       - name: TypeScript typecheck
         run: npm run typecheck
@@ -31,6 +33,6 @@ jobs:
         if: always() && hashFiles('out/test-5s-720p.mp4') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: paper-score-smoke-render
+          name: paper-score-video-smoke-render
           path: out/test-5s-720p.mp4
           retention-days: 7
