@@ -79,7 +79,12 @@ export const Diorama: React.FC<{timeline: ScoreTimeline}> = ({timeline}) => {
   const cameraZ = baseCamera.z - energy * 0.38 - punch * 0.76;
   const cameraX = baseCamera.x + (energy - 0.25) * 0.11 + punch * 0.055;
   const cameraY = baseCamera.y + (energy - 0.25) * 0.045;
-  const titleFrame = Math.round(timeline.durationFrames * 0.88);
+  const titleFrame = resolveCueFrame(timeline, {
+    type: 'cadence',
+    index: -1,
+    fallbackFrame: Math.round(timeline.durationFrames * 0.88),
+    minConfidence: 0.4,
+  });
 
   return (
     <ThreeCanvas
