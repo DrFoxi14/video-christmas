@@ -61,8 +61,8 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
           depth: thickness,
           bevelEnabled: true,
           bevelSegments: 1,
-          bevelSize: 0.008,
-          bevelThickness: 0.008,
+          bevelSize: 0.28,
+          bevelThickness: 0.004,
           steps: 1,
           curveSegments: 10,
         });
@@ -100,7 +100,7 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
       rotation={[foldX + rotationJitter.x, rotationJitter.y, rotationJitter.z]}
     >
       <group position={[0, 9, 0]}>
-        <group position={[-8, 0, 0]} scale={[scale, -scale, scale]}>
+        <group position={[-8, 0, 0]} scale={[scale, -scale, 1]}>
           {geometries.map((geometry, index) => (
             <mesh
               key={id + '-' + index}
