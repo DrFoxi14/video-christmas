@@ -156,6 +156,7 @@ if (midiInput) {
     note.endFrame = Math.round((note.startSeconds + note.durationSeconds) * fps);
   }
   for (const measure of timeline.measures) {
+    measure.tick = Math.round(measure.quarter * ppq);
     measure.timeSeconds = midiQuarterToSeconds(measure.quarter);
     measure.milliseconds = Math.round(measure.timeSeconds * 1000);
     measure.frame = Math.round(measure.timeSeconds * fps);
