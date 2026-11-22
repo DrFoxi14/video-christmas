@@ -1,7 +1,8 @@
 import React, {useLayoutEffect, useEffect, useMemo} from 'react';
+import {useLoader} from '@react-three/fiber';
 import {ExtrudeGeometry, MeshStandardMaterial} from 'three';
 import {SVGLoader} from 'three/examples/jsm/loaders/SVGLoader.js';
-import {useCurrentFrame} from 'remotion';
+import {staticFile, useCurrentFrame} from 'remotion';
 import {createPaperMaps, disposePaperMaps} from './PaperMaterial';
 import {microRotation, onTwosFrame, paperBoilOffset, springFoldAngle} from './stopMotion';
 
@@ -9,10 +10,12 @@ export type PaperTransition = 'fold' | 'slide-left' | 'slide-right' | 'rise' | '
 
 export interface PaperLayerProps {
   id: string;
-  svg: string;
+  svg?: string;
+  svgSrc?: string;
   color: string;
   position?: [number, number, number];
   enterFrame?: number;
+  exitFrame?: number;
   transition?: PaperTransition;
   thickness?: number;
   seed?: number;
@@ -20,12 +23,16 @@ export interface PaperLayerProps {
   jitter?: number;
 }
 
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
 export const PaperLayer: React.FC<PaperLayerProps> = ({
   id,
-  svg,
+  svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900"><path d="M0 0 H1600 V900 H0 Z"/></svg>',
+  svgSrc,
   color,
   position = [0, 0, 0],
   enterFrame = 0,
+  exitFrame,
   transition = 'none',
   thickness = 0.04,
   seed = 1,
@@ -34,9 +41,15 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const steppedFrame = onTwosFrame(frame);
-  const progress = Math.max(0, Math.min(1, (steppedFrame - enterFrame) / 18));
+  const progressIn = clamp01((steppedFrame - enterFrame) / 18);
+  const progressOut = exitFrame === undefined ? 0 : clamp01((steppedFrame - exitFrame) / 18);
+  const visibleUntil = exitFrame === undefined ? Number.POSITIVE_INFINITY : exitFrame + 18;
   const rotationJitter = microRotation(id, frame, jitter);
   const boil = paperBoilOffset(id, frame);
+  const assetUrl = svgSrc
+    ? staticFile(svgSrc)
+    : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  const parsedSvg = useLoader(SVGLoader, assetUrl);
   const maps = useMemo(() => createPaperMaps(color, seed), [color, seed]);
 
   const materials = useMemo(() => {
@@ -47,37 +60,49 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
       roughnessMap: maps.roughness,
       roughness: 0.94,
       metalness: 0,
+      transparent: true,
+      opacity: 1,
     });
-    const edge = new MeshStandardMaterial({color: '#342b29', roughness: 1, metalness: 0});
+    const edge = new MeshStandardMaterial({
+      color: '#342b29',
+      roughness: 1,
+      metalness: 0,
+      transparent: true,
+      opacity: 1,
+    });
     return [face, edge] as const;
   }, [maps]);
 
   const geometries = useMemo(() => {
-    const parsed = new SVGLoader().parse(svg);
     const output: ExtrudeGeometry[] = [];
-    for (const path of parsed.paths) {
+    for (const path of parsedSvg.paths) {
       for (const shape of SVGLoader.createShapes(path)) {
         const geometry = new ExtrudeGeometry(shape, {
           depth: thickness,
           bevelEnabled: true,
           bevelSegments: 1,
-          bevelSize: 0.28,
+          bevelSize: 0.12,
           bevelThickness: 0.004,
           steps: 1,
-          curveSegments: 10,
+          curveSegments: 18,
         });
         geometry.computeVertexNormals();
         output.push(geometry);
       }
     }
     return output;
-  }, [svg, thickness]);
+  }, [parsedSvg, thickness]);
 
   useLayoutEffect(() => {
     maps.albedo.offset.set(boil.u, boil.v);
     maps.bump.offset.set(boil.u * 1.4, boil.v * 1.3);
     maps.roughness.offset.set(boil.u, boil.v);
-  }, [maps, boil.u, boil.v]);
+    const opacity = 1 - progressOut;
+    materials.forEach((material) => {
+      material.opacity = opacity;
+      material.needsUpdate = true;
+    });
+  }, [maps, materials, boil.u, boil.v, progressOut]);
 
   useEffect(() => () => {
     geometries.forEach((geometry) => geometry.dispose());
@@ -85,22 +110,25 @@ export const PaperLayer: React.FC<PaperLayerProps> = ({
     disposePaperMaps(maps);
   }, [geometries, materials, maps]);
 
-  if (steppedFrame < enterFrame) return null;
+  if (steppedFrame < enterFrame || steppedFrame > visibleUntil) return null;
+
   const slideX = transition === 'slide-left'
-    ? (1 - progress) * 18
+    ? (1 - progressIn) * 18 - progressOut * 5
     : transition === 'slide-right'
-      ? -(1 - progress) * 18
+      ? -(1 - progressIn) * 18 + progressOut * 5
       : 0;
-  const slideY = transition === 'rise' ? -(1 - progress) * 10 : 0;
-  const foldX = transition === 'fold' ? springFoldAngle(frame, enterFrame) : 0;
+  const slideY = transition === 'rise' ? -(1 - progressIn) * 10 - progressOut * 2 : 0;
+  const foldIn = transition === 'fold' ? springFoldAngle(frame, enterFrame) : 0;
+  const foldOut = progressOut * Math.PI * 0.48;
+  const rotationX = foldIn + foldOut + rotationJitter.x;
 
   return (
     <group
       position={[position[0] + slideX, position[1] + slideY - 4.5, position[2]]}
-      rotation={[foldX + rotationJitter.x, rotationJitter.y, rotationJitter.z]}
+      rotation={[rotationX, rotationJitter.y, rotationJitter.z]}
     >
       <group position={[0, 9, 0]}>
-        <group position={[-8, 0, 0]} scale={[scale, -scale, 1]}>
+        <group position={[-8, 0, 0]} scale={[scale * progressIn, -scale * progressIn, 1]}>
           {geometries.map((geometry, index) => (
             <mesh
               key={id + '-' + index}
