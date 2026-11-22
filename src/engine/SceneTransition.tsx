@@ -36,10 +36,12 @@ export const SceneTransition: React.FC<{
 
   if (kind === 'page-flip') {
     return (
-      <mesh position={[0, 0, 5.7]} rotation={[0, Math.PI * progress, 0]}>
-        <planeGeometry args={[24, 15]} />
-        <primitive object={material} attach="material" />
-      </mesh>
+      <group position={[12, 0, 5.7]} rotation={[0, Math.PI * progress, 0]}>
+        <mesh position={[-12, 0, 0]}>
+          <planeGeometry args={[24, 15]} />
+          <primitive object={material} attach="material" />
+        </mesh>
+      </group>
     );
   }
 
