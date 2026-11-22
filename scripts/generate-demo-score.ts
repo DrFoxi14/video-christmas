@@ -47,63 +47,6 @@ const groupName: Record<DemoNote['family'], string> = {
   bass: 'Low Strings / Sub',
 };
 
-const writeWav = (path: string, notes: DemoNote[], durationSeconds: number) => {
-  const sampleRate = 44100;
-  const channels = 2;
-  const sampleCount = Math.floor(sampleRate * durationSeconds);
-  const pcm = Buffer.alloc(sampleCount * channels * 2);
-
-  for (let i = 0; i < sampleCount; i++) {
-    const time = i / sampleRate;
-    let sample = 0;
-    for (const note of notes) {
-      const local = time - note.start;
-      if (local < 0 || local > note.duration) continue;
-      const attack = Math.min(1, local / (note.family === 'percussion' ? 0.008 : 0.48));
-      const release = Math.min(1, (note.duration - local) / (note.family === 'percussion' ? 0.12 : 0.5));
-      const envelope = Math.max(0, Math.min(attack, release));
-      const frequency = 440 * Math.pow(2, (note.pitch - 69) / 12);
-      let voice: number;
-      if (note.family === 'percussion') {
-        const transient = Math.exp(-local * 14) * Math.sin(2 * Math.PI * frequency * 1.8 * local);
-        const low = Math.exp(-local * 11) * Math.sin(2 * Math.PI * 48 * local);
-        voice = transient * 0.55 + low * 0.7;
-      } else {
-        const partials =
-          Math.sin(2 * Math.PI * frequency * local) * 0.62 +
-          Math.sin(2 * Math.PI * frequency * 2 * local) * 0.23 +
-          Math.sin(2 * Math.PI * frequency * 3.01 * local) * 0.1;
-        const vibrato = 1 + Math.sin(local * 4.1) * 0.0015;
-        voice = Math.sin(2 * Math.PI * frequency * vibrato * local) * 0.62 + partials * 0.38;
-      }
-      const gain = note.family === 'strings' ? 0.13 : note.family === 'brass' ? 0.17 : note.family === 'bass' ? 0.2 : 0.22;
-      sample += voice * envelope * note.velocity * gain;
-    }
-    const fadeOut = time > 14.28 ? Math.max(0, 1 - (time - 14.28) / 0.04) : 1;
-    sample = Math.max(-0.94, Math.min(0.94, sample * fadeOut));
-    const pcmValue = Math.round(sample * 32767);
-    pcm.writeInt16LE(pcmValue, i * 4);
-    pcm.writeInt16LE(pcmValue, i * 4 + 2);
-  }
-
-  const header = Buffer.alloc(44);
-  header.write('RIFF', 0);
-  header.writeUInt32LE(36 + pcm.length, 4);
-  header.write('WAVE', 8);
-  header.write('fmt ', 12);
-  header.writeUInt32LE(16, 16);
-  header.writeUInt16LE(1, 20);
-  header.writeUInt16LE(channels, 22);
-  header.writeUInt32LE(sampleRate, 24);
-  header.writeUInt32LE(sampleRate * channels * 2, 28);
-  header.writeUInt16LE(channels * 2, 32);
-  header.writeUInt16LE(16, 34);
-  header.write('data', 36);
-  header.writeUInt32LE(pcm.length, 40);
-  mkdirSync(dirname(path), {recursive: true});
-  writeFileSync(path, Buffer.concat([header, pcm]));
-};
-
 const midi = new Midi();
 midi.header.tempos = [
   {bpm: 72, ticks: 0},
@@ -132,12 +75,10 @@ for (const family of ['strings', 'brass', 'percussion', 'bass'] as const) {
 }
 
 const midiPath = resolve('public/score/demo.mid');
-const wavPath = resolve('public/audio/demo-preview.wav');
 mkdirSync(dirname(midiPath), {recursive: true});
 writeFileSync(midiPath, Buffer.from(midi.toArray()));
-writeWav(wavPath, demoNotes, 15);
 
-console.log('Generated 15-second orchestral demo:');
+console.log('Generated 15-second orchestral demo (visual timing reference only):');
 console.log('  MIDI:', midiPath);
-console.log('  WAV: ', wavPath);
 console.log('  Notes:', demoNotes.length, '| tempo map: 72 → 96 → 120 BPM');
+console.log('  Render output: video-only; no audio track is created.');
