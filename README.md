@@ -79,7 +79,7 @@ All animation is derived from the integer Remotion frame and the committed score
 
 The Blender generator builds a layered 3D miniature set rather than a handful of placeholder shapes: a populated Bethlehem street, individually modelled stonework, timber-framed houses, tiled roofs, a detailed open-front stable with rafters and thatch, a manger, pottery, woven baskets, lanterns, hay, shepherds, Mary and Joseph, an infant, donkey, ox, sheep, olive trees, cypress trees, mountains, clouds and a star field. Materials include procedural surface texture; lighting and camera shots are animated in score time. The output is silent MP4.
 
-Requirements: Blender 4.2+ (installed locally and available as `blender` on PATH). No external 3D asset pack or paid generation API is required.
+Requirements for local rendering: Blender 3.6+ installed and available as `blender` on PATH. No external 3D asset pack or paid generation API is required.
 
 ~~~bash
 # Fast 6-second preview, suitable for checking the generated set
@@ -89,4 +89,4 @@ npm run render:blender:smoke
 npm run render:blender
 ~~~
 
-The full render also saves `out/nativity-scene.blend` so the generated scene can be inspected in Blender. A scene-detail gate checks that hundreds of architectural, terrain, prop, vegetation and roof elements were generated; it fails the build rather than accepting a sparse placeholder set. The GitHub Actions workflow produces a downloadable short MP4 preview so Windows users can watch it without installing Blender.
+The full render also saves `out/nativity-scene.blend` so the generated scene can be inspected in Blender. The first Blender pass is an automated, score-aware procedural scene builder, not a paid text-to-video API; it creates and animates the set from its authored scene design without asking the user to model, place or animate anything. A scene-detail gate checks that hundreds of architectural, terrain, prop, vegetation and roof elements were generated; it fails the build rather than accepting a sparse placeholder set. The GitHub Actions workflow produces a downloadable short MP4 preview so Windows users can watch it without installing Blender.
