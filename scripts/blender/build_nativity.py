@@ -1063,7 +1063,16 @@ def setup_camera_and_lights(scene, timeline):
 
 
 def configure_scene(scene, fps, smoke=False):
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
+    engine_items = {
+        item.identifier
+        for item in scene.render.bl_rna.properties["engine"].enum_items
+    }
+    if "BLENDER_EEVEE_NEXT" in engine_items:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    elif "BLENDER_EEVEE" in engine_items:
+        scene.render.engine = "BLENDER_EEVEE"
+    else:
+        scene.render.engine = "CYCLES"
     scene.render.resolution_x = 720 if smoke else 1920
     scene.render.resolution_y = 405 if smoke else 1080
     scene.render.resolution_percentage = 100
