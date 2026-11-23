@@ -13,7 +13,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -52,6 +52,8 @@ jobs:
           name: paper-score-full-demo-render
           path: out/test-15s-720p.mp4
           retention-days: 7
+      - name: Validate Blender generator syntax
+        run: python3 -m py_compile scripts/blender/build_nativity.py
       - name: Install Blender headless dependencies
         run: |
           sudo apt-get update
@@ -62,6 +64,7 @@ jobs:
         run: |
           mkdir -p out
           xvfb-run -a blender --background --factory-startup --python scripts/blender/build_nativity.py -- --smoke --output out/ai-nativity-blender-preview.mp4 --no-save-blend
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of csv=p=0 out/ai-nativity-blender-preview.mp4 | (! grep -q audio)
       - name: Upload detailed Blender scene preview
         if: always() && hashFiles('out/ai-nativity-blender-preview.mp4') != ''
         uses: actions/upload-artifact@v4
