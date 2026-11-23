@@ -1128,7 +1128,7 @@ def configure_scene(scene, fps, smoke=False):
     scene.render.fps = fps
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
+    # Engine selected above from Blender's actual enum values.
     if hasattr(scene, "eevee"):
         if hasattr(scene.eevee, "taa_render_samples"):
             scene.eevee.taa_render_samples = 16 if smoke else 64
@@ -1169,6 +1169,7 @@ def parse_args():
     parser.add_argument("--output", default="out/nativity-blender.mp4")
     parser.add_argument("--blend-out", default="out/nativity-scene.blend")
     parser.add_argument("--smoke", action="store_true", help="Render a short low-resolution CI preview.")
+    parser.add_argument("--smoke-start-seconds", type=float, default=52.0, help="Start time for the score excerpt preview.")
     parser.add_argument("--no-save-blend", action="store_true")
     args_list = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     return parser.parse_args(args_list)
@@ -1207,13 +1208,15 @@ def main():
         timeline = {"fps": 24, "durationSeconds": 15, "durationFrames": 360,
                     "dynamics": [], "accentTriggers": []}
         print("WARNING: score timeline not found; using a 15-second fallback.")
-    fps = 12 if args.smoke else max(1, int(timeline.get("fps", 24)))
-    duration = 6.0 if args.smoke else max(1.0, float(timeline.get("durationSeconds", 15)))
-    frame_end = max(2, round(duration * fps))
+    # Keep the score's native frame rate even for previews so score cues remain
+    # aligned with the original MusicXML-derived timeline.
+    fps = max(1, int(timeline.get("fps", 24)))
+    duration = max(1.0, float(timeline.get("durationSeconds", 15)))
+    full_frame_end = max(2, int(timeline.get("durationFrames", round(duration * fps))))
     scene = bpy.context.scene
     configure_scene(scene, fps, args.smoke)
     scene.frame_start = 1
-    scene.frame_end = frame_end
+    scene.frame_end = full_frame_end
     # A deterministic seed makes rerenders reproducible.
     bpy.context.scene.render.image_settings.color_mode = "RGB"
     M.update(new_materials())
@@ -1225,6 +1228,13 @@ def main():
     camera = setup_camera_and_lights(scene, timeline)
     quality_gate()
     scene.camera = camera
+    if args.smoke:
+        excerpt_start = max(0.0, min(duration - 6.0, float(args.smoke_start_seconds)))
+        scene.frame_start = 1 + round(excerpt_start * fps)
+        scene.frame_end = min(full_frame_end, scene.frame_start + round(6.0 * fps))
+    else:
+        scene.frame_start = 1
+        scene.frame_end = full_frame_end
     scene.render.resolution_percentage = 100
     scene.render.filepath = str(Path(args.output).resolve())
     scene.render.image_settings.file_format = "PNG"
@@ -1252,7 +1262,8 @@ def main():
         blend_path = Path(args.blend_out).resolve()
         blend_path.parent.mkdir(parents=True, exist_ok=True)
         bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
-    print("Rendering {} frames at {} fps to {}".format(frame_end, fps, args.output))
+    render_frames = scene.frame_end - scene.frame_start + 1
+    print("Rendering frames {}–{} ({} frames) at {} fps to {}".format(scene.frame_start, scene.frame_end, render_frames, fps, args.output))
     bpy.ops.render.render(animation=True)
     print("RENDER COMPLETE:", args.output)
 
