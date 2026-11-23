@@ -2,7 +2,7 @@
 
 A deterministic Remotion + Three.js scene engine for orchestral and SATB scores. The deliverable is **video-only**: the rendered MP4 contains no audio stream. MusicXML drives the visual choreography; an optional MIDI file supplies the performed tempo map.
 
-No generative video models are used. Cutouts, cardstock materials, lighting, camera motion, transitions, title reveals, and timing are deterministic functions of the score timeline.
+An additional Blender pipeline builds a detailed, fully dimensional miniature Nativity set from code and renders a silent 2.5D camera move. It is designed for unattended generation: one command creates the set, animates the camera and score-reactive lighting, and exports MP4. It does not require the user to model or arrange assets.
 
 ## Requirements
 
@@ -73,3 +73,20 @@ The composition does not mount an audio track. A separate audio file is not requ
 ## Determinism
 
 All animation is derived from the integer Remotion frame and the committed score timeline. Paper grain and micro-jitter use stable seeded values and twos quantization. Runtime AI calls and remote rendering services are not used.
+
+
+## Detailed Blender scene (automatic generation)
+
+The Blender generator builds a layered 3D miniature set rather than a handful of placeholder shapes: a populated Bethlehem street, individually modelled stonework, timber-framed houses, tiled roofs, a detailed open-front stable with rafters and thatch, a manger, pottery, woven baskets, lanterns, hay, shepherds, Mary and Joseph, an infant, donkey, ox, sheep, olive trees, cypress trees, mountains, clouds and a star field. Materials include procedural surface texture; lighting and camera shots are animated in score time. The output is silent MP4.
+
+Requirements: Blender 4.2+ (installed locally and available as `blender` on PATH). No external 3D asset pack or paid generation API is required.
+
+~~~bash
+# Fast 6-second preview, suitable for checking the generated set
+npm run render:blender:smoke
+
+# Render the full score timeline to 1080p
+npm run render:blender
+~~~
+
+The full render also saves `out/nativity-scene.blend` so the generated scene can be inspected in Blender. A scene-detail gate checks that hundreds of architectural, terrain, prop, vegetation and roof elements were generated; it fails the build rather than accepting a sparse placeholder set. The GitHub Actions workflow produces a downloadable short MP4 preview so Windows users can watch it without installing Blender.
