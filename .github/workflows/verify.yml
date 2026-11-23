@@ -63,7 +63,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: |
           mkdir -p out
-          xvfb-run -a blender --background --factory-startup --python scripts/blender/build_nativity.py -- --smoke --output out/ai-nativity-blender-preview.mp4 --no-save-blend
+          xvfb-run -a blender --background --factory-startup --python scripts/blender/build_nativity.py -- --timeline src/data/slava-score-cues.json --smoke --output out/ai-nativity-blender-preview.mp4 --no-save-blend
           audio_streams="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of csv=p=0 out/ai-nativity-blender-preview.mp4)"
           test -z "$audio_streams"
           echo "Verified: Blender preview contains no audio stream"
