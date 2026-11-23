@@ -14,8 +14,8 @@
     "render:4k": "remotion render src/index.ts PaperScore out/slava-4k.mp4 --width=3840 --height=2160 --gl=angle",
     "render:prores": "remotion render src/index.ts PaperScore out/slava-4k-prores.mov --width=3840 --height=2160 --codec=prores --prores-profile=hq --pixel-format=yuv422p10le --gl=angle",
     "parse:score": "tsx scripts/parse-musicxml.ts",
-    "render:blender": "blender --background --python scripts/blender/build_nativity.py -- --timeline src/data/timeline.json --output out/nativity-blender.mp4",
-    "render:blender:smoke": "blender --background --python scripts/blender/build_nativity.py -- --smoke --output out/nativity-smoke.mp4 --no-save-blend"
+    "render:blender": "blender --background --python scripts/blender/build_nativity.py -- --timeline src/data/slava-score-cues.json --output out/slava-nativity.mp4",
+    "render:blender:smoke": "blender --background --python scripts/blender/build_nativity.py -- --timeline src/data/slava-score-cues.json --smoke --output out/nativity-smoke.mp4 --no-save-blend"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
