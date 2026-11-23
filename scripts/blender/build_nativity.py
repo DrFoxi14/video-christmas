@@ -23,6 +23,7 @@ from mathutils import Vector
 
 RNG = random.Random(24112026)
 COUNTS: dict[str, int] = {}
+M: dict[str, bpy.types.Material] = {}
 MATERIALS: dict[str, bpy.types.Material] = {}
 
 
@@ -365,7 +366,7 @@ def add_house(name, x, y, scale=1.0, variant=0):
             cube(name + " corner dressed stone",
                  (x + side * (width / 2 + 0.08 * scale), y - depth / 2 - 0.02, base_z + row * 0.38 * scale),
                  (0.2 * scale, 0.3 * scale, 0.32 * scale),
-                 M["stone_light"] if hasattr(M, "stone_light") else M["stone_light"], "masonry", 0.025)
+                 M["stone_light"], "masonry", 0.025)
     add_lantern((x + width / 2 + 0.12 * scale, y - depth / 2 - 0.35 * scale, 1.8 * scale), scale=0.48 * scale)
     add_storage_props((x + 1.9 * scale, y - 1.0 * scale, 0), scale=0.72 * scale)
 
@@ -1081,7 +1082,7 @@ def configure_scene(scene, fps, smoke=False):
         if hasattr(scene.eevee, "gtao_factor"):
             scene.eevee.gtao_factor = 1.35
     scene.render.image_settings.color_mode = "RGBA"
-    scene.view_settings.view_transform = "AgX" if "AgX" in bpy.context.preferences.system.bl_rna.properties.get("dummy", []) else "Standard"
+    scene.view_settings.view_transform = "AgX" if bpy.app.version >= (4, 0, 0) else "Standard"
     scene.render.image_settings.color_depth = "8"
     scene.world = bpy.data.worlds.new("deep blue Judean night")
     scene.world.use_nodes = True
