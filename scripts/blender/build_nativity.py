@@ -1071,7 +1071,6 @@ def configure_scene(scene, fps, smoke=False):
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
     scene.render.engine = "BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
-    scene.eevee.taa_render_samples = 16 if smoke else 64 if bpy.app.version < (4, 2, 0) else 64
     if hasattr(scene, "eevee"):
         if hasattr(scene.eevee, "taa_render_samples"):
             scene.eevee.taa_render_samples = 16 if smoke else 64
@@ -1096,7 +1095,7 @@ def configure_scene(scene, fps, smoke=False):
     scene.render.image_settings.compression = 25
     scene.render.film_transparent = False
     scene.render.threads_mode = "FIXED"
-    scene.render.threads = max(1, (bpy.app.build_options.threads if hasattr(bpy.app, "build_options") else 8))
+    scene.render.threads = 8
     scene.render.use_motion_blur = False
     scene.render.image_settings.color_mode = "RGB"
     scene.render.resolution_percentage = 100
