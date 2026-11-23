@@ -70,7 +70,7 @@ const classify = (name: string, program?: number, percussion = false): TrackFami
   if (/violin|viola|cello|string|orchestra|bowed/i.test(name) || (program !== undefined && program >= 40 && program <= 51)) return 'strings';
   if (/trumpet|horn|trombone|tuba|brass|cornet/i.test(name) || (program !== undefined && program >= 56 && program <= 63)) return 'brass';
   if (/flute|oboe|clarinet|bassoon|piccolo|sax|woodwind/i.test(name) || (program !== undefined && program >= 64 && program <= 79)) return 'woodwinds';
-  if (/choir|voice|vocal|chorus/i.test(name) || (program !== undefined && program >= 52 && program <= 55)) return 'choir';
+  if (/choir|voice|vocal|chorus|soprano|alto|tenor/i.test(name) || (program !== undefined && program >= 52 && program <= 55)) return 'choir';
   if (/piano|organ|keyboard|harpsichord|celesta/i.test(name) || (program !== undefined && program <= 7)) return 'keyboard';
   if (/bass|low/i.test(name)) return 'bass';
   return 'other';
@@ -197,7 +197,9 @@ const parseMusicXml = (path: string): ParseResult => {
     for (const match of partTags) {
       const id = (match[1].match(/id=["']([^"']+)["']/i) || [])[1] || 'part';
       const body = match[2];
-      const name = (body.match(/<part-name\b[^>]*>([\s\S]*?)<\/part-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim() || id;
+      const explicitName = (body.match(/<part-name\b[^>]*>([\s\S]*?)<\/part-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim();
+      const instrumentName = (body.match(/<instrument-name\b[^>]*>([\s\S]*?)<\/instrument-name>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim();
+      const name = explicitName || instrumentName || id;
       const programValue = (body.match(/<midi-program\b[^>]*>([\s\S]*?)<\/midi-program>/i) || [])[1];
       partNames.set(id, {name, program: programValue ? Math.max(0, toNumber(programValue) - 1) : undefined});
     }
