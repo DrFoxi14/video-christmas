@@ -1042,18 +1042,67 @@ def setup_camera_and_lights(scene, timeline):
     bpy.context.collection.objects.link(point)
     point.location = (0.6, 4.6, 11.8)
     count("light", point)
-    # Gentle changing light follows dynamics in the source score.
+    # Score-aware lighting, camera emphasis and voice-entry pulses.
+    def event_frame(event):
+        return int(event[0] if isinstance(event, (list, tuple)) else event.get("frame", 0))
+
+    def event_value(event, key, index, fallback=0.0):
+        if isinstance(event, (list, tuple)):
+            return float(event[index]) if len(event) > index else fallback
+        return float(event.get(key, fallback))
+
     samples = timeline.get("dynamics", []) if isinstance(timeline, dict) else []
-    if samples:
-        for sample in samples:
-            frame = 1 + int(sample.get("frame", 0))
-            intensity = 450 + 950 * max(0.0, min(1.0, float(sample.get("value", 0.4))))
+    for sample in samples:
+        frame = 1 + event_frame(sample)
+        value = event_value(sample, "value", 1, 0.4)
+        intensity = 450 + 950 * max(0.0, min(1.0, value))
+        if frame <= scene.frame_end:
             point_data.energy = intensity
             point_data.keyframe_insert(data_path="energy", frame=frame)
+
+    # The score's voice entries create a restrained gold pulse and a brief camera
+    # push-in. Simultaneous SATB entrances receive a stronger emphasis.
+    voice_groups = {}
+    for entry in timeline.get("voiceEntries", []):
+        frame = 1 + event_frame(entry)
+        confidence = event_value(entry, "confidence", 2, 0.8)
+        if frame <= scene.frame_end:
+            voice_groups[frame] = max(voice_groups.get(frame, 0.0), confidence)
+    for frame, confidence in sorted(voice_groups.items()):
+        point_data.energy = 850 + 220 * confidence
+        point_data.keyframe_insert(data_path="energy", frame=frame)
+        point_data.energy = 650
+        point_data.keyframe_insert(data_path="energy", frame=min(scene.frame_end, frame + 7))
+        camera_data.lens = 47.0
+        camera_data.keyframe_insert(data_path="lens", frame=max(scene.frame_start, frame - 3))
+        camera_data.lens = 48.2 + confidence
+        camera_data.keyframe_insert(data_path="lens", frame=frame)
+        camera_data.lens = 47.0
+        camera_data.keyframe_insert(data_path="lens", frame=min(scene.frame_end, frame + 9))
+
+    # Cadences receive a longer, softer glow and a more deliberate dolly/zoom.
+    for event in timeline.get("harmonyEvents", []):
+        kind = event[1] if isinstance(event, (list, tuple)) and len(event) > 1 else event.get("kind", "")
+        if kind != "cadence":
+            continue
+        frame = 1 + event_frame(event)
+        confidence = event_value(event, "confidence", 2, 0.5)
+        if frame <= scene.frame_end:
+            point_data.energy = 1350 + 500 * confidence
+            point_data.keyframe_insert(data_path="energy", frame=frame)
+            point_data.energy = 650
+            point_data.keyframe_insert(data_path="energy", frame=min(scene.frame_end, frame + 18))
+            camera_data.lens = 47.0
+            camera_data.keyframe_insert(data_path="lens", frame=max(scene.frame_start, frame - 5))
+            camera_data.lens = 51.5
+            camera_data.keyframe_insert(data_path="lens", frame=frame)
+            camera_data.lens = 47.0
+            camera_data.keyframe_insert(data_path="lens", frame=min(scene.frame_end, frame + 18))
+
     # Accent hits add a brief, restrained radiance pulse instead of camera jolts.
-    for accent in (timeline.get("accentTriggers", []) if isinstance(timeline, dict) else []):
-        frame = 1 + int(accent.get("frame", 0))
-        strength = float(accent.get("intensity", 0.4))
+    for accent in timeline.get("accentTriggers", []) if isinstance(timeline, dict) else []:
+        frame = 1 + event_frame(accent)
+        strength = event_value(accent, "intensity", 1, 0.4)
         if frame <= scene.frame_end:
             point_data.energy = 650 + 550 * strength
             point_data.keyframe_insert(data_path="energy", frame=frame)
